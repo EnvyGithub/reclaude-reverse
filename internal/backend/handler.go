@@ -238,12 +238,19 @@ func (h *Handler) mockMessagesResponse(w http.ResponseWriter, reqNum int, body [
 	send("message_stop", `{"type":"message_stop"}`)
 }
 
-// handleForward forwards the request to the real Anthropic API.
+// handleForward forwards the request to the real upstream server.
 func (h *Handler) handleForward(w http.ResponseWriter, r *http.Request, reqNum int, body []byte) {
-	log.Printf("[REQ #%d] [MODE: FORWARD] Forwarding to %s", reqNum, h.anthropicURL)
+	// Determine target host from X-Original-Host header
+	originalHost := r.Header.Get("X-Original-Host")
+	if originalHost == "" {
+		originalHost = "api.anthropic.com"
+	}
+	targetBase := "https://" + originalHost
+
+	log.Printf("[REQ #%d] [MODE: FORWARD] Forwarding to %s", reqNum, targetBase)
 
 	// Build target URL
-	targetURL := h.anthropicURL + r.URL.Path
+	targetURL := targetBase + r.URL.Path
 	if r.URL.RawQuery != "" {
 		targetURL += "?" + r.URL.RawQuery
 	}
@@ -256,7 +263,7 @@ func (h *Handler) handleForward(w http.ResponseWriter, r *http.Request, reqNum i
 		return
 	}
 
-	// Copy headers
+	// Copy headers (skip proxy-added headers)
 	for k, vv := range r.Header {
 		if strings.HasPrefix(strings.ToLower(k), "x-original-") ||
 			strings.HasPrefix(strings.ToLower(k), "x-forwarded-") {
@@ -267,23 +274,22 @@ func (h *Handler) handleForward(w http.ResponseWriter, r *http.Request, reqNum i
 		}
 	}
 
-	// Inject credentials
-	if h.oauthToken != "" {
-		// 方案 B: 用真实 OAuth Token 替换 Authorization Bearer
-		fwdReq.Header.Set("Authorization", "Bearer "+h.oauthToken)
-		// 保留 Anthropic-Dangerous-Direct-Browser-Access: true
-		log.Printf("[REQ #%d] 🔑 Replaced Authorization with real OAuth token", reqNum)
-	} else if h.apiKey != "" {
-		// 方案 A: 用 API Key
-		fwdReq.Header.Set("x-api-key", h.apiKey)
-		fwdReq.Header.Del("Authorization")
-		fwdReq.Header.Del("Anthropic-Dangerous-Direct-Browser-Access")
+	// Only inject credentials for api.anthropic.com
+	// claude.ai uses its own cookies/session — don't touch auth headers
+	if originalHost == "api.anthropic.com" {
+		if h.oauthToken != "" {
+			fwdReq.Header.Set("Authorization", "Bearer "+h.oauthToken)
+			log.Printf("[REQ #%d] 🔑 Replaced Authorization with real OAuth token", reqNum)
+		} else if h.apiKey != "" {
+			fwdReq.Header.Set("x-api-key", h.apiKey)
+			fwdReq.Header.Del("Authorization")
+			fwdReq.Header.Del("Anthropic-Dangerous-Direct-Browser-Access")
+		}
+		if fwdReq.Header.Get("anthropic-version") == "" {
+			fwdReq.Header.Set("anthropic-version", "2023-06-01")
+		}
 	}
-
-	if fwdReq.Header.Get("anthropic-version") == "" {
-		fwdReq.Header.Set("anthropic-version", "2023-06-01")
-	}
-	fwdReq.Host = "api.anthropic.com"
+	fwdReq.Host = originalHost
 
 	// Send request with Chrome TLS fingerprint (utls)
 	client := chromeHTTPClient()
@@ -305,24 +311,20 @@ func (h *Handler) handleForward(w http.ResponseWriter, r *http.Request, reqNum i
 	}
 	w.WriteHeader(resp.StatusCode)
 
-	// Stream response body
-	if strings.Contains(resp.Header.Get("Content-Type"), "text/event-stream") {
-		flusher, ok := w.(http.Flusher)
-		buf := make([]byte, 4096)
-		for {
-			n, err := resp.Body.Read(buf)
-			if n > 0 {
-				w.Write(buf[:n])
-				if ok {
-					flusher.Flush()
-				}
-			}
-			if err != nil {
-				break
+	// Stream response body with flushing
+	flusher, canFlush := w.(http.Flusher)
+	buf := make([]byte, 32768)
+	for {
+		n, err := resp.Body.Read(buf)
+		if n > 0 {
+			w.Write(buf[:n])
+			if canFlush {
+				flusher.Flush()
 			}
 		}
-	} else {
-		io.Copy(w, resp.Body)
+		if err != nil {
+			break
+		}
 	}
 }
 
@@ -374,6 +376,8 @@ func chromeHTTPClient() *http.Client {
 			},
 			// Disable Go's built-in HTTP/2 to match HTTP/1.1 ALPN
 			TLSNextProto: make(map[string]func(authority string, c *tls.Conn) http.RoundTripper),
+			// Don't auto-decompress — pass compressed response as-is to client
+			DisableCompression: true,
 		},
 	}
 }

@@ -378,8 +378,8 @@ func shouldIntercept(host string) bool {
 	if strings.HasSuffix(host, ".anthropic.com") {
 		return true
 	}
-	// NOTE: claude.ai is NOT intercepted — Cloudflare blocks MITM'd requests (403).
-	// Claude Desktop traffic to claude.ai passes through directly.
+	// claude.ai uses passthrough — Cloudflare JS Challenge blocks MITM even with utls.
+	// API endpoints (healthcheck) pass, but HTML pages get 403.
 	return false
 }
 
@@ -400,16 +400,9 @@ func shouldInterceptRequest(host, path string) bool {
 		return false
 
 	case "claude.ai":
-		if strings.HasPrefix(path, "/api/organizations") && strings.Contains(path, "/chat_conversations") {
-			return true
-		}
-		if strings.HasPrefix(path, "/api/append_message") {
-			return true
-		}
-		if strings.HasPrefix(path, "/api/retry_message") {
-			return true
-		}
-		return false
+		// ALL claude.ai requests go through backend (utls Chrome fingerprint)
+		// This bypasses Cloudflare's TLS fingerprint detection
+		return true
 	}
 	return false
 }
