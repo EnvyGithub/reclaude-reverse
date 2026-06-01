@@ -6,13 +6,17 @@
 package backend
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"strings"
 	"time"
+
+	utls "github.com/refraction-networking/utls"
 )
 
 // Mode defines the backend operating mode.
@@ -281,8 +285,8 @@ func (h *Handler) handleForward(w http.ResponseWriter, r *http.Request, reqNum i
 	}
 	fwdReq.Host = "api.anthropic.com"
 
-	// Send request
-	client := &http.Client{Timeout: 5 * time.Minute}
+	// Send request with Chrome TLS fingerprint (utls)
+	client := chromeHTTPClient()
 	resp, err := client.Do(fwdReq)
 	if err != nil {
 		log.Printf("[REQ #%d] ✗ Forward error: %v", reqNum, err)
@@ -319,5 +323,57 @@ func (h *Handler) handleForward(w http.ResponseWriter, r *http.Request, reqNum i
 		}
 	} else {
 		io.Copy(w, resp.Body)
+	}
+}
+
+// chromeHTTPClient creates an HTTP client that uses utls to mimic
+// Chrome's TLS fingerprint. This bypasses Cloudflare's bot detection
+// which would otherwise block Go's default TLS fingerprint with 403.
+func chromeHTTPClient() *http.Client {
+	return &http.Client{
+		Timeout: 5 * time.Minute,
+		Transport: &http.Transport{
+			DialTLS: func(network, addr string) (net.Conn, error) {
+				conn, err := net.DialTimeout("tcp", addr, 30*time.Second)
+				if err != nil {
+					return nil, err
+				}
+
+				host, _, _ := net.SplitHostPort(addr)
+
+				// Use Chrome fingerprint but force HTTP/1.1 for compatibility
+				spec, err := utls.UTLSIdToSpec(utls.HelloChrome_Auto)
+				if err != nil {
+					conn.Close()
+					return nil, fmt.Errorf("utls spec error: %v", err)
+				}
+
+				// Modify ALPN to HTTP/1.1 only (avoids HTTP/2 framing issues)
+				for i, ext := range spec.Extensions {
+					if alpn, ok := ext.(*utls.ALPNExtension); ok {
+						alpn.AlpnProtocols = []string{"http/1.1"}
+						spec.Extensions[i] = alpn
+					}
+				}
+
+				uconn := utls.UClient(conn, &utls.Config{
+					ServerName: host,
+				}, utls.HelloCustom)
+
+				if err := uconn.ApplyPreset(&spec); err != nil {
+					conn.Close()
+					return nil, fmt.Errorf("utls apply preset: %v", err)
+				}
+
+				if err := uconn.Handshake(); err != nil {
+					conn.Close()
+					return nil, fmt.Errorf("utls handshake: %v", err)
+				}
+
+				return uconn, nil
+			},
+			// Disable Go's built-in HTTP/2 to match HTTP/1.1 ALPN
+			TLSNextProto: make(map[string]func(authority string, c *tls.Conn) http.RoundTripper),
+		},
 	}
 }

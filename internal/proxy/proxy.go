@@ -372,16 +372,14 @@ func shouldIntercept(host string) bool {
 	host = hostOnly(host)
 	switch host {
 	case "api.anthropic.com",
-		"claude.ai",
 		"statsig.anthropic.com":
 		return true
 	}
 	if strings.HasSuffix(host, ".anthropic.com") {
 		return true
 	}
-	if strings.HasSuffix(host, ".claude.ai") {
-		return true
-	}
+	// NOTE: claude.ai is NOT intercepted — Cloudflare blocks MITM'd requests (403).
+	// Claude Desktop traffic to claude.ai passes through directly.
 	return false
 }
 
