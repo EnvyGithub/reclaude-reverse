@@ -1,0 +1,33 @@
+# Binaries
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Build output
+/proxy.exe
+/backend.exe
+
+# Go
+/vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# CA certificates (sensitive)
+*.crt
+*.key
+*.pem
+
+# Logs
+*.log
+
+# Temp
+/tmp/
