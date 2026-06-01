@@ -1,0 +1,13 @@
+{
+  "listen": "127.0.0.1:8443",
+  "tokens": [
+    {
+      "id": "pro-account-1",
+      "oauth_token": "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",
+      "max_rpm": 10,
+      "max_daily": 200,
+      "enabled": true
+    }
+  ],
+  "sk_file": "../data/sk_keys.json"
+}

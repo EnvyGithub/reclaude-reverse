@@ -21,7 +21,8 @@ import (
 
 func main() {
 	listenAddr := flag.String("listen", "127.0.0.1:9090", "Proxy listen address")
-	backendAddr := flag.String("backend", "127.0.0.1:8080", "Backend server address to forward intercepted requests")
+	backendAddr := flag.String("backend", "127.0.0.1:8080", "Backend/Gateway server address")
+	skToken := flag.String("sk", "", "Session key for Gateway authentication")
 	flag.Parse()
 
 	fmt.Println("╔══════════════════════════════════════════════════════╗")
@@ -42,7 +43,7 @@ func main() {
 	fmt.Println()
 
 	// Step 2: Create and start the proxy server
-	server := proxy.NewServer(caRoot, *backendAddr)
+	server := proxy.NewServer(caRoot, *backendAddr, *skToken)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

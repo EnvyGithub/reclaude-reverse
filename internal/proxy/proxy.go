@@ -26,14 +26,16 @@ import (
 // Server is the MITM proxy server.
 type Server struct {
 	backendAddr string
+	skToken     string // Session key for Gateway authentication
 	leafCache   *ca.LeafCache
 	caRoot      *ca.Root
 }
 
 // NewServer creates a new MITM proxy server.
-func NewServer(caRoot *ca.Root, backendAddr string) *Server {
+func NewServer(caRoot *ca.Root, backendAddr, skToken string) *Server {
 	return &Server{
 		backendAddr: backendAddr,
+		skToken:     skToken,
 		leafCache:   ca.NewLeafCache(caRoot),
 		caRoot:      caRoot,
 	}
@@ -267,6 +269,9 @@ func (s *Server) forwardToBackend(ctx context.Context, origReq *http.Request, or
 
 	fwdReq.Header.Set("X-Original-Host", originalHost)
 	fwdReq.Header.Set("X-Forwarded-Proto", "https")
+	if s.skToken != "" {
+		fwdReq.Header.Set("X-SK-Token", s.skToken)
+	}
 
 	client := &http.Client{
 		Transport: &http.Transport{
