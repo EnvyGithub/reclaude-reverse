@@ -1,0 +1,8 @@
+# Project-scoped IDA MCP configuration.
+# Requires the official ida-mcp@HexRaysSA plugin installed on this machine.
+# Reuse its transport and lifecycle hooks without registering a second server.
+[plugins."ida-mcp@HexRaysSA"]
+enabled = true
+
+[plugins."ida-mcp@HexRaysSA".mcp_servers.ida]
+enabled = true
