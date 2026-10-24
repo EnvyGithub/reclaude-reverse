@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "inspected_date": "2026-10-25",
+  "timezone": "Asia/Singapore",
+  "method": "Read-only local files, existing logs, Go build metadata, ASAR source extraction and IDA analysis of an executable copy. No provider requests or runtime compatibility tests.",
+  "binary": {
+    "version": "v1.5.1",
+    "sha256": "6DCC286D204FD93633C4E16CC1C8381759B26814BF95FAEAE2DA5EB216C9A385",
+    "go_version": "go1.26.10",
+    "platform": "windows/amd64",
+    "module": "github.com/reclaude/client",
+    "vcs_revision": "1b5e992021c48fd588ee81e63320a31eb61245c0",
+    "vcs_time": "2026-10-23T16:00:57Z",
+    "vcs_modified": false,
+    "address_kind": "IDA virtual address at PE preferred image base 0x140000000",
+    "functions": [
+      {"name": "spawn.claudeAppCommandAndEnv", "address": "0x140355F60", "evidence": ["--proxy-server=", "--ignore-certificate-errors-spki-list=", "--user-data-dir="]},
+      {"name": "spawn.claudeProxyEnv", "address": "0x140358DA0", "evidence": ["CLI/Node proxy environment builder"]},
+      {"name": "spawn.ClaudeProfile.applyAppEnv", "address": "0x14035BB20", "evidence": ["CLAUDE_CONFIG_DIR", "RECLAUDE_PROFILE"]},
+      {"name": "mitm.map.init.1", "address": "0x1403C6460", "evidence": ["api.anthropic.com", ".anthropic.com", "claude.ai", "claude.com", "platform.claude.com", ".claudeusercontent.com"]},
+      {"name": "mitm.MatchFloorFor", "address": "0x1403D2420", "evidence": ["Reads built-in domain table at global 0x140A46EC0"]},
+      {"name": "mitm.(*Server).runRequestLoop", "address": "0x1403C8BE0", "evidence": ["net/http.ReadRequest", "tunnel.Identity.Forward", "mitm.(*Server).forwardWebSocketToGateway"]},
+      {"name": "tunnel.Identity.Forward", "address": "0x1403BD8E0", "evidence": ["POST", "/proxy", "tunnel.newRequestEnvelopeBytes", "deviceauth.Signer.AddSignatureHeaders", "net/http.(*Client).do"]},
+      {"name": "tunnel.encodeEnvelope", "address": "0x1403BD420", "evidence": ["encoding/json.Marshal", "bswap ecx at 0x1403BD50B", "4-byte length write, JSON write, then io.copyBuffer"]},
+      {"name": "tunnel.Identity.forwardWebSocketWith", "address": "0x1403C0800", "evidence": ["/proxy/ws", "X-Reclaude-Envelope", "encoding/base64.(*Encoding).EncodeToString", "deviceauth.Signer.AddSignatureHeaders"]},
+      {"name": "deviceauth.Signer.AddSignatureHeaders", "address": "0x140364620", "evidence": ["crypto/rand.Read", "crypto/sha256.Sum256", "time.Now", "crypto/ed25519.sign", "X-Reclaude-Device-Id", "X-Reclaude-Ts", "X-Reclaude-Nonce", "X-Reclaude-Body-Sha256", "X-Reclaude-Signature"]}
+    ]
+  },
+  "desktop": {
+    "version": "3.1623.1",
+    "source_url": "https://dl.reclaude.ai/claude-app/latest/Claude-windows-x64-portable.zip",
+    "archive_size_bytes": 79341094,
+    "entry": ".vite/build/index.pre.js",
+    "patch_marker": "__RECLAUDE_INJECTED_v7__",
+    "manifest_spec": "3.1623.1-windows-x64.json",
+    "manifest_patch_version": 1,
+    "manifest_integrity_patched": true,
+    "patch_evidence": [
+      {"topic": "Profile header", "source_excerpt": "var _profile = process.env.RECLAUDE_PROFILE;", "details": "Wraps session webRequest.onBeforeSendHeaders and tags Anthropic/Claude domain requests with x-reclaude-profile."},
+      {"topic": "Chromium proxy startup compatibility", "details": "Filters selected proxy/certificate switches from process.argv and wraps app.commandLine.hasSwitch while preserving native Chromium behavior."},
+      {"topic": "Node and VM CA", "source_excerpt": "process.env.NODE_EXTRA_CA_CERTS = HOST_CA;", "details": "Stages the CA and wraps two actual VM spawn callsites with a read-only CA mount and guest environment."},
+      {"topic": "URL override permission", "source_excerpt": "globalThis.isDeveloperApprovedDevUrlOverrideEnabled = true;", "details": "This flag permits a CLAUDE_AI_URL override; it does not itself change the frontend URL."}
+    ],
+    "main_bundle": ".vite/build/index.chunk-BRvO7fVg.js",
+    "offset_unit": "Zero-based Unicode character offset in decoded UTF-8 source, not byte offset",
+    "bundle_evidence": [
+      {"offset": 1716709, "topic": "1P frontend selector Qg defaults to https://claude.ai and conditionally permits CLAUDE_AI_URL"},
+      {"offset": 2896778, "topic": "3P getMainWindowUrl and provider API host abstraction"},
+      {"offset": 2897886, "topic": "3P hasClaudeAiProductFeatures=false, canSyncCoworkMemoryRemotely=false, managesProviderRouting=true"},
+      {"offset": 2945046, "topic": "1P frontend comes from anthropicOriginUrl; product and provider-routing boundaries differ from 3P"},
+      {"offset": 2636742, "topic": "Gateway anthropicWire exposes baseUrl, defaultAuthScheme and adminHeaders"},
+      {"offset": 4378082, "topic": "VM spawn callsite invokes __reclaudeVmSpawn wrapper"}
+    ]
+  },
+  "limitations": [
+    "Function names were recovered from Go pclntab. Some decompiled C has Go ABI variable-allocation warnings; framing and signing claims were checked against assembly and data references.",
+    "The archive and binary are not included. Addresses and offsets apply only to the identified samples.",
+    "No claim is made about remote gateway implementation, credential ownership, successful inference, or compatibility with newer official Desktop builds.",
+    "No credentials, account binding IDs, private inference URLs, user transcripts or raw logs are included."
+  ]
+}
