@@ -2,7 +2,8 @@
   "schema_version": 1,
   "inspected_date": "2026-10-25",
   "timezone": "Asia/Singapore",
-  "method": "Read-only local files, existing logs, Go build metadata, ASAR source extraction and IDA analysis of an executable copy. No provider requests or runtime compatibility tests.",
+  "method": "Read-only local files, existing logs, official IDA MCP analysis, ASAR source reading and offline comparison of the selected profile cookie/OAuth cache. No new login, account, quota, OAuth, model or inference requests.",
+  "related_evidence": {"login_static": "reclaude-v1.5.1-login-evidence.json", "offline_saved_credentials": "reclaude-v1.5.1-offline-login-audit.json", "report": "2026-10-25-reclaude-v1.5.1-routing.md"},
   "binary": {
     "version": "v1.5.1",
     "sha256": "6DCC286D204FD93633C4E16CC1C8381759B26814BF95FAEAE2DA5EB216C9A385",
@@ -23,7 +24,325 @@
       {"name": "tunnel.Identity.Forward", "address": "0x1403BD8E0", "evidence": ["POST", "/proxy", "tunnel.newRequestEnvelopeBytes", "deviceauth.Signer.AddSignatureHeaders", "net/http.(*Client).do"]},
       {"name": "tunnel.encodeEnvelope", "address": "0x1403BD420", "evidence": ["encoding/json.Marshal", "bswap ecx at 0x1403BD50B", "4-byte length write, JSON write, then io.copyBuffer"]},
       {"name": "tunnel.Identity.forwardWebSocketWith", "address": "0x1403C0800", "evidence": ["/proxy/ws", "X-Reclaude-Envelope", "encoding/base64.(*Encoding).EncodeToString", "deviceauth.Signer.AddSignatureHeaders"]},
-      {"name": "deviceauth.Signer.AddSignatureHeaders", "address": "0x140364620", "evidence": ["crypto/rand.Read", "crypto/sha256.Sum256", "time.Now", "crypto/ed25519.sign", "X-Reclaude-Device-Id", "X-Reclaude-Ts", "X-Reclaude-Nonce", "X-Reclaude-Body-Sha256", "X-Reclaude-Signature"]}
+      {"name": "deviceauth.Signer.AddSignatureHeaders", "address": "0x140364620", "evidence": ["crypto/rand.Read", "crypto/sha256.Sum256", "time.Now", "crypto/ed25519.sign", "X-Reclaude-Device-Id", "X-Reclaude-Ts", "X-Reclaude-Nonce", "X-Reclaude-Body-Sha256", "X-Reclaude-Signature"]},
+      {"name": "tunnel.newRequestEnvelopeBytes", "address": "0x1403BEF80", "evidence": ["bytes.Buffer", "ClientRequestMetadata type 0x140554D80", "encodeEnvelope before HTTP dispatch"]},
+      {"name": "tunnel.lowerCaseHeaders", "address": "0x1403BF080", "evidence": ["map[string]string", "lowercase keys", "comma-space join", "conditional accept-language normalization", "req.Host"]},
+      {"name": "tunnel.DecodeResponse", "address": "0x1403BD2A0", "evidence": ["GatewayResponseMetadata type 0x14054D7A0", "skip Keepalive at offset 56", "return reader after final metadata"]},
+      {"name": "tunnel.decodeEnvelope", "address": "0x1403BD620", "evidence": ["big-endian uint32", "16 MiB metadata limit", "exact reads", "JSON unmarshal"]},
+      {"name": "tunnel.copyHeaders", "address": "0x1403BFB60", "evidence": ["canonical header names", "splitSetCookieHeader for set-cookie"]},
+      {"name": "tunnel.splitSetCookieHeader", "address": "0x1403BFE80", "evidence": ["comma followed by cookie name and equals sign identifies split point"]},
+      {"name": "tunnel.Identity.Forward.func1", "address": "0x1403BEF40", "evidence": ["timer callback closes gateway response body"]},
+      {"name": "mitm.buildClaudeBindingTable", "address": "0x1403C6720", "evidence": ["byDeviceID", "bySK", "deviceOf", "default identity", "duplicate keys keep first"]},
+      {"name": "mitm.(*Server).SetClaudeBindings", "address": "0x1403C6A60", "evidence": ["build table", "atomic StorePointer"]},
+      {"name": "mitm.(*Server).resolveClaudeBinding", "address": "0x1403C6CA0", "evidence": ["remove X-Reclaude-Profile", "Authorization Bearer", "sessionKey cookie", "optional refresh and second lookup"]},
+      {"name": "mitm.claudeBindingQuery.lookup", "address": "0x1403C70A0", "evidence": ["DeviceID then Bearer SK then cookie SK then default", "separate exact-match flag"]},
+      {"name": "mitm.parseProfileDeviceID", "address": "0x1403C7480", "evidence": ["1-20 ASCII digits", "ParseInt base 10 bitSize 64", "value > 0"]},
+      {"name": "mitm.identityOf", "address": "0x1403CBA00", "evidence": ["Identity.SK", "Identity.GatewayURL", "deviceauth.SignerFor"]},
+      {"name": "mitm.stripHopByHopHeaders", "address": "0x1403CA8E0", "evidence": ["Connection-nominated headers and fixed hop-by-hop headers removed"]},
+      {"name": "mitm.drainResponseBody", "address": "0x1403CA060", "evidence": ["copy remaining response body to discard, then Close"]},
+      {"name": "mitm.writeTunnelError", "address": "0x1403CA160", "evidence": ["ForwardError kind 1 -> 400 invalid_request_error", "otherwise 502 api_error"]},
+      {"name": "mitm.isClaudeTokenRequest", "address": "0x1403CCC60", "evidence": ["POST", "api.anthropic.com or platform.claude.com", "^/v1/oauth/(?:[^/]+/)?token$"]},
+      {"name": "mitm.(*Server).routeClaudeRequest", "address": "0x1403CCDA0", "evidence": ["refresh-token DeviceID fallback", "unattributed token request with multiple bindings -> local 503"]},
+      {"name": "mitm.tokenRequestDeviceID", "address": "0x1403CD6A0", "evidence": ["peekBody limit 65536", "JSON or form refresh_token", "RefreshTokenDeviceID"]},
+      {"name": "mitm.(*Server).routeClaudeRequest.tagRefreshTokenResponse.func1", "address": "0x1403CCF20", "evidence": ["HTTP 200", "empty or identity Content-Encoding", "read 65537 to enforce 65536 limit", "rewrite placeholder refresh_token only", "recalculate Content-Length"]},
+      {"name": "mitm.unattributedTokenResponse", "address": "0x1403CDD80", "evidence": ["HTTP 503", "temporarily_unavailable", "Cache-Control: no-store"]},
+      {"name": "claudehome.TagRefreshToken", "address": "0x14035EBA0", "evidence": ["only not-used-by-reclaude and managed-by-reclaude", "append colon and positive DeviceID"]},
+      {"name": "claudehome.RefreshTokenDeviceID", "address": "0x14035ECC0", "evidence": ["recognized placeholder prefix", "colon separator", "positive int64 suffix"]},
+      {"name": "config.ScanBindings", "address": "0x140349980", "evidence": ["enumerate account directories", "ParseAccountDirName", "LoadBinding"]},
+      {"name": "config.LoadBinding", "address": "0x14034A0A0", "evidence": ["bindingDirPath", "device.json", "readDeviceAt"]},
+      {"name": "config.CurrentBinding", "address": "0x14034A820", "evidence": ["readCurrentPointer", "LoadBinding", "ScanBindings fallbacks"]},
+      {"name": "cli.loadClaudeBindings", "address": "0x140401B80", "evidence": ["ScanBindings", "applyRuntimeGateway", "CurrentBinding"]}
+    ]
+  },
+  "proxy_profile_analysis": {
+    "verified_date": "2026-10-25",
+    "source": "Official IDA MCP: ida-domain type bytes, disassembly and xrefs; static analysis only.",
+    "sample_sha256": "6DCC286D204FD93633C4E16CC1C8381759B26814BF95FAEAE2DA5EB216C9A385",
+    "type_name_base": "0x14049C000",
+    "scope": "Static protocol/profile phase only; saved credential comparison is recorded in the separate offline login audit. No provider requests, sample execution or manual IDB edits.",
+    "types": {
+      "request": {
+        "name": "tunnel.ClientRequestMetadata",
+        "address": "0x140554d80",
+        "size_bytes": 80,
+        "fields": [
+          {"name": "URL", "offset": 0, "go_type": "string", "json_tag": "json:\"url\"", "name_address": "0x1404a9330"},
+          {"name": "Method", "offset": 16, "go_type": "string", "json_tag": "json:\"method\"", "name_address": "0x1404b23c3"},
+          {"name": "Headers", "offset": 32, "go_type": "map[string]string", "json_tag": "json:\"headers\"", "name_address": "0x1404b46d0"},
+          {"name": "TraceID", "offset": 40, "go_type": "string", "json_tag": "json:\"traceId,omitempty\"", "name_address": "0x1404bae3d"},
+          {"name": "Edge", "offset": 56, "go_type": "string", "json_tag": "json:\"edge,omitempty\"", "name_address": "0x1404b7655"},
+          {"name": "Keepalive", "offset": 72, "go_type": "bool", "json_tag": "json:\"keepalive,omitempty\"", "name_address": "0x1404bcd75"}
+        ]
+      },
+      "response": {
+        "name": "tunnel.GatewayResponseMetadata",
+        "address": "0x14054d7a0",
+        "size_bytes": 64,
+        "fields": [
+          {"name": "Status", "offset": 0, "go_type": "int", "json_tag": "json:\"status\"", "name_address": "0x1404b1a0d"},
+          {"name": "StatusText", "offset": 8, "go_type": "string", "json_tag": "json:\"statusText,omitempty\"", "name_address": "0x1404bdda9"},
+          {"name": "Headers", "offset": 24, "go_type": "map[string]string", "json_tag": "json:\"headers\"", "name_address": "0x1404b46d0"},
+          {"name": "Events", "offset": 32, "go_type": "[]tunnel.ReclaudeEvent", "json_tag": "json:\"events,omitempty\"", "name_address": "0x1404b9c25"},
+          {"name": "Keepalive", "offset": 56, "go_type": "bool", "json_tag": "json:\"keepalive,omitempty\"", "name_address": "0x1404bcd75"}
+        ]
+      },
+      "event": {
+        "name": "tunnel.ReclaudeEvent",
+        "address": "0x14054d6c0",
+        "size_bytes": 64,
+        "fields": [
+          {"name": "Kind", "offset": 0, "go_type": "string", "json_tag": "json:\"kind\"", "name_address": "0x1404ac78d"},
+          {"name": "Reason", "offset": 16, "go_type": "string", "json_tag": "json:\"reason,omitempty\"", "name_address": "0x1404b9945"},
+          {"name": "RetryAfterSec", "offset": 32, "go_type": "int", "json_tag": "json:\"retryAfterSec,omitempty\"", "name_address": "0x1404c0c88"},
+          {"name": "DaysLeft", "offset": 40, "go_type": "int", "json_tag": "json:\"daysLeft,omitempty\"", "name_address": "0x1404bbcbf"},
+          {"name": "NewAccountMaskedEmail", "offset": 48, "go_type": "string", "json_tag": "json:\"newAccountMaskedEmail,omitempty\"", "name_address": "0x1404d751f"}
+        ]
+      },
+      "identity": {
+        "name": "tunnel.Identity",
+        "address": "0x1405521a0",
+        "size_bytes": 96,
+        "fields": [
+          {"name": "SK", "offset": 0, "go_type": "string", "json_tag": "", "name_address": "0x14049c230"},
+          {"name": "GatewayURL", "offset": 16, "go_type": "string", "json_tag": "", "name_address": "0x1404a3f26"},
+          {"name": "Signer", "offset": 32, "go_type": "deviceauth.Signer", "json_tag": "", "name_address": "0x14049eac0"}
+        ]
+      },
+      "table": {
+        "name": "mitm.claudeBindingTable",
+        "address": "0x14054cfc0",
+        "size_bytes": 40,
+        "fields": [
+          {"name": "byDeviceID", "offset": 0, "go_type": "map[int64]*tunnel.Identity", "json_tag": "", "name_address": "0x1404a300e"},
+          {"name": "bySK", "offset": 8, "go_type": "map[string]*tunnel.Identity", "json_tag": "", "name_address": "0x14049c84e"},
+          {"name": "deviceOf", "offset": 16, "go_type": "map[*tunnel.Identity]int64", "json_tag": "", "name_address": "0x1404a063b"},
+          {"name": "def", "offset": 24, "go_type": "*tunnel.Identity", "json_tag": "", "name_address": "0x14049c345"},
+          {"name": "count", "offset": 32, "go_type": "int", "json_tag": "", "name_address": "0x14049d0ec"}
+        ]
+      },
+      "binding": {
+        "name": "config.Binding",
+        "address": "0x14054a5c0",
+        "size_bytes": 160,
+        "fields": [
+          {"name": "DeviceID", "offset": 0, "go_type": "int64", "json_tag": "", "name_address": "0x1404a086b"},
+          {"name": "OrgID", "offset": 8, "go_type": "int64", "json_tag": "", "name_address": "0x14049d274"},
+          {"name": "Device", "offset": 16, "go_type": "config.Device", "json_tag": "", "name_address": "0x14049dd90"},
+          {"name": "Dir", "offset": 144, "go_type": "string", "json_tag": "", "name_address": "0x14049c3a9"}
+        ]
+      },
+      "device": {
+        "name": "config.Device",
+        "address": "0x14055f540",
+        "size_bytes": 128,
+        "fields": [
+          {"name": "SK", "offset": 0, "go_type": "string", "json_tag": "json:\"sk\"", "name_address": "0x1404a633c"},
+          {"name": "DeviceID", "offset": 16, "go_type": "int64", "json_tag": "json:\"device_id\"", "name_address": "0x1404b667a"},
+          {"name": "GatewayURL", "offset": 24, "go_type": "string", "json_tag": "json:\"gateway_url\"", "name_address": "0x1404b907c"},
+          {"name": "GatewayMode", "offset": 40, "go_type": "string", "json_tag": "json:\"gateway_mode,omitempty\"", "name_address": "0x1404beeed"},
+          {"name": "UserEmail", "offset": 56, "go_type": "string", "json_tag": "json:\"user_email\"", "name_address": "0x1404b7b6f"},
+          {"name": "PublicKeyFingerprint", "offset": 72, "go_type": "string", "json_tag": "json:\"public_key_fingerprint,omitempty\"", "name_address": "0x1404d73ab"},
+          {"name": "OrgID", "offset": 88, "go_type": "int64", "json_tag": "json:\"org_id,omitempty\"", "name_address": "0x1404b909b"},
+          {"name": "OrgName", "offset": 96, "go_type": "string", "json_tag": "json:\"org_name,omitempty\"", "name_address": "0x1404bb2a8"},
+          {"name": "Platform", "offset": 112, "go_type": "string", "json_tag": "json:\"platform\"", "name_address": "0x1404b5bc1"}
+        ]
+      }
+    },
+    "request_defaults": {"template_address": "0x1406134A0", "keepalive_offset": 72, "keepalive": true},
+    "constants": [
+      {"address": "0x140589060", "byte_length": 18, "value": "X-Reclaude-Profile"},
+      {"address": "0x140583207", "byte_length": 10, "value": "sessionKey"},
+      {"address": "0x14058043C", "byte_length": 2, "value": ", "},
+      {"address": "0x140586905", "byte_length": 15, "value": "accept-language"},
+      {"address": "0x140585E2F", "byte_length": 14, "value": "en-US,en;q=0.9"},
+      {"address": "0x14058EB44", "byte_length": 24, "value": "application/octet-stream"},
+      {"address": "0x14058AABA", "byte_length": 20, "value": "not-used-by-reclaude"},
+      {"address": "0x14058994A", "byte_length": 19, "value": "managed-by-reclaude"},
+      {"address": "0x140604000", "byte_length": 1, "value": ":"},
+      {"address": "0x140588351", "byte_length": 17, "value": "api.anthropic.com"},
+      {"address": "0x14058A0EF", "byte_length": 19, "value": "platform.claude.com"},
+      {"address": "0x140592F1D", "byte_length": 28, "value": "^/v1/oauth/(?:[^/]+/)?token$"},
+      {"address": "0x14058361C", "byte_length": 11, "value": "device.json"},
+      {"address": "0x140580F83", "byte_length": 6, "value": "claude"},
+      {"address": "0x140581D75", "byte_length": 8, "value": "accounts"},
+      {"address": "0x14058160D", "byte_length": 7, "value": "current"}
+    ],
+    "checkpoints": [
+      {
+        "id": "request_buffer_and_type",
+        "claim": "The request is encoded into bytes.Buffer using ClientRequestMetadata before HTTP dispatch.",
+        "instructions": [
+          {"address": "0x1403BEFA2", "assembly": "lea     rax, unk_140534360"},
+          {"address": "0x1403BEFB3", "assembly": "lea     rax, unk_140554D80"},
+          {"address": "0x1403BEFC0", "assembly": "call    go_runtime_convT"},
+          {"address": "0x1403BEFEB", "assembly": "call    rec_internal_tunnel_encodeEnvelope"},
+          {"address": "0x1403BDB67", "assembly": "call    rec_internal_tunnel_newRequestEnvelopeBytes"},
+          {"address": "0x1403BDD09", "assembly": "call    go_net_http_NewRequestWithContext"},
+          {"address": "0x1403BE300", "assembly": "call    go_net_http___Client__do"}
+        ]
+      },
+      {
+        "id": "frame_encoding",
+        "claim": "JSON length is bounded by uint32, written big-endian before JSON and body.",
+        "instructions": [
+          {"address": "0x1403BD470", "assembly": "mov     edx, 0FFFFFFFFh"},
+          {"address": "0x1403BD475", "assembly": "cmp     rbx, rdx"},
+          {"address": "0x1403BD50B", "assembly": "bswap   ecx"},
+          {"address": "0x1403BD51C", "assembly": "mov     edi, 4"},
+          {"address": "0x1403BD52C", "assembly": "call    rdx"},
+          {"address": "0x1403BD550", "assembly": "call    rdx"},
+          {"address": "0x1403BD580", "assembly": "call    go_io_copyBuffer"}
+        ]
+      },
+      {
+        "id": "response_decode",
+        "claim": "Read the complete prefix and JSON; accept metadata length at most 0x1000000; JSON errors propagate.",
+        "instructions": [
+          {"address": "0x1403BD680", "assembly": "call    go_io_ReadAtLeast"},
+          {"address": "0x1403BD695", "assembly": "bswap   eax"},
+          {"address": "0x1403BD698", "assembly": "cmp     eax, 1000000h"},
+          {"address": "0x1403BD69D", "assembly": "jbe     short loc_1403BD717"},
+          {"address": "0x1403BD74D", "assembly": "call    go_io_ReadAtLeast"},
+          {"address": "0x1403BD752", "assembly": "test    rbx, rbx"},
+          {"address": "0x1403BD755", "assembly": "jnz     loc_1403BD811"},
+          {"address": "0x1403BD778", "assembly": "call    go_encoding_json_Unmarshal"}
+        ]
+      },
+      {
+        "id": "keepalive_skip",
+        "claim": "GatewayResponseMetadata.Keepalive at offset 0x38 makes DecodeResponse loop.",
+        "instructions": [
+          {"address": "0x1403BD305", "assembly": "call    rec_internal_tunnel_decodeEnvelope"},
+          {"address": "0x1403BD318", "assembly": "cmp     byte ptr [rdx+38h], 0"},
+          {"address": "0x1403BD31C", "assembly": "jnz     short loc_1403BD2DA"},
+          {"address": "0x1403BD372", "assembly": "mov     qword ptr [rsp+70h+arg_0], rax"},
+          {"address": "0x1403BD377", "assembly": "mov     qword ptr [rsp+70h+arg_0+8], rbx"}
+        ]
+      },
+      {
+        "id": "outer_status_and_timeout",
+        "claim": "Only outer HTTP 200 is decoded; a single 300000000000 ns timer closes the body while decoding metadata.",
+        "instructions": [
+          {"address": "0x1403BE300", "assembly": "call    go_net_http___Client__do"},
+          {"address": "0x1403BE316", "assembly": "cmp     qword ptr [rax+10h], 0C8h"},
+          {"address": "0x1403BE320", "assembly": "jnz     short loc_1403BE351"},
+          {"address": "0x1403BE54F", "assembly": "mov     rax, 45D964B800h"},
+          {"address": "0x1403BE559", "assembly": "call    go_time_AfterFunc"},
+          {"address": "0x1403BE573", "assembly": "call    rec_internal_tunnel_DecodeResponse"},
+          {"address": "0x1403BEF52", "assembly": "mov     rdx, [rcx+40h]"},
+          {"address": "0x1403BEF5A", "assembly": "mov     rcx, [rdx+18h]"},
+          {"address": "0x1403BEF60", "assembly": "call    rcx"}
+        ]
+      },
+      {
+        "id": "content_length",
+        "claim": "Response defaults to unknown length and chunked; a successfully parsed Content-Length replaces those defaults.",
+        "instructions": [
+          {"address": "0x1403BE8BA", "assembly": "mov     qword ptr [rax+50h], 0FFFFFFFFFFFFFFFFh"},
+          {"address": "0x1403BE8D6", "assembly": "lea     rcx, unk_140581875"},
+          {"address": "0x1403BE922", "assembly": "call    rec_internal_tunnel_copyHeaders"},
+          {"address": "0x1403BE940", "assembly": "call    go_net_textproto_MIMEHeader_Get"},
+          {"address": "0x1403BE954", "assembly": "call    go_strconv_ParseInt"},
+          {"address": "0x1403BE959", "assembly": "test    rbx, rbx"},
+          {"address": "0x1403BE970", "assembly": "mov     [rcx+50h], rax"},
+          {"address": "0x1403BE974", "assembly": "movups  xmmword ptr [rcx+60h], xmm15"}
+        ]
+      },
+      {
+        "id": "downstream_write",
+        "claim": "Response.Write streams the reconstructed HTTP response; success closes Body; write failure can drain Body.",
+        "instructions": [
+          {"address": "0x1403C9860", "assembly": "call    go_net_http___Response__Write"},
+          {"address": "0x1403C9868", "assembly": "jnz     loc_1403C9C59"},
+          {"address": "0x1403C9885", "assembly": "call    rcx"},
+          {"address": "0x1403C9CA0", "assembly": "call    rec_internal_mitm_drainResponseBody"}
+        ]
+      },
+      {
+        "id": "profile_consumption",
+        "claim": "Resolve the first profile header value locally and remove the header before forwarding.",
+        "instructions": [
+          {"address": "0x1403C6CDD", "assembly": "lea     rcx, unk_140589060"},
+          {"address": "0x1403C6CE9", "assembly": "call    go_runtime_mapaccess2_faststr"},
+          {"address": "0x1403C6D45", "assembly": "call    go_runtime_mapdelete_faststr"},
+          {"address": "0x1403C6EA3", "assembly": "mov     rax, [rcx]"},
+          {"address": "0x1403C6EAA", "assembly": "call    go_strings_TrimSpace"},
+          {"address": "0x1403C6F00", "assembly": "call    rec_internal_mitm_claudeBindingQuery_lookup"}
+        ]
+      },
+      {
+        "id": "lookup_precedence",
+        "claim": "Profile DeviceID, Bearer SK and cookie SK precede the default Identity.",
+        "instructions": [
+          {"address": "0x1403C70F9", "assembly": "call    rec_internal_mitm_parseProfileDeviceID"},
+          {"address": "0x1403C7120", "assembly": "call    go_runtime_mapaccess1_fast64"},
+          {"address": "0x1403C7183", "assembly": "call    go_runtime_mapaccess1_faststr"},
+          {"address": "0x1403C7246", "assembly": "call    go_runtime_mapaccess1_faststr"},
+          {"address": "0x1403C72E3", "assembly": "mov     rdx, [r10+18h]"},
+          {"address": "0x1403C72F0", "assembly": "xor     ebx, ebx"}
+        ]
+      },
+      {
+        "id": "profile_validation",
+        "claim": "ASCII digits, 1-20 characters, ParseInt base 10 bitSize 64, positive result.",
+        "instructions": [
+          {"address": "0x1403C7493", "assembly": "test    rbx, rbx"},
+          {"address": "0x1403C7498", "assembly": "cmp     rbx, 14h"},
+          {"address": "0x1403C74B8", "assembly": "cmp     dl, 30h ; '0'"},
+          {"address": "0x1403C74C0", "assembly": "cmp     dl, 39h ; '9'"},
+          {"address": "0x1403C74CF", "assembly": "mov     ecx, 0Ah"},
+          {"address": "0x1403C74D4", "assembly": "mov     edi, 40h ; '@'"},
+          {"address": "0x1403C74D9", "assembly": "call    go_strconv_ParseInt"},
+          {"address": "0x1403C74E5", "assembly": "test    rax, rax"},
+          {"address": "0x1403C74E8", "assembly": "jg      short loc_1403C74F4"}
+        ]
+      },
+      {
+        "id": "token_attribution_guard",
+        "claim": "Unmatched token requests try refresh-token DeviceID; if still unmatched and count > 1, return local 503.",
+        "instructions": [
+          {"address": "0x1403CCDF0", "assembly": "call    rec_internal_mitm_isClaudeTokenRequest"},
+          {"address": "0x1403CCE17", "assembly": "call    rec_internal_mitm_tokenRequestDeviceID"},
+          {"address": "0x1403CCE40", "assembly": "call    go_runtime_mapaccess1_fast64"},
+          {"address": "0x1403CCE67", "assembly": "cmp     qword ptr [rdx+20h], 1"},
+          {"address": "0x1403CCE6C", "assembly": "jg      short loc_1403CCEC8"},
+          {"address": "0x1403CCED7", "assembly": "call    rec_internal_mitm_unattributedTokenResponse"},
+          {"address": "0x1403CE08B", "assembly": "mov     qword ptr [rax+10h], 1F7h"}
+        ]
+      },
+      {
+        "id": "refresh_tagging_bounds",
+        "claim": "Token response handler reads at most 65537 bytes, rewrites only at <=65536, updates length after rewriting.",
+        "instructions": [
+          {"address": "0x1403CCFF4", "assembly": "mov     ecx, 10001h"},
+          {"address": "0x1403CCFF9", "assembly": "call    go_io_LimitReader"},
+          {"address": "0x1403CD000", "assembly": "call    go_io_ReadAll"},
+          {"address": "0x1403CD060", "assembly": "cmp     rbx, 10000h"},
+          {"address": "0x1403CD067", "assembly": "jle     short loc_1403CD084"},
+          {"address": "0x1403CD165", "assembly": "call    rec_internal_claudehome_TagRefreshToken"},
+          {"address": "0x1403CD374", "assembly": "mov     [rdx+50h], rsi"},
+          {"address": "0x1403CD3AA", "assembly": "call    go_net_http_Header_Del"},
+          {"address": "0x1403CD3DA", "assembly": "call    go_net_http_Header_Set"}
+        ]
+      },
+      {
+        "id": "error_classification",
+        "claim": "ForwardError kind 1 maps to HTTP 400; default maps to HTTP 502.",
+        "instructions": [
+          {"address": "0x1403CA1FB", "assembly": "cmp     qword ptr [rcx], 1"},
+          {"address": "0x1403CA200", "assembly": "jz      short loc_1403CA21F"},
+          {"address": "0x1403CA202", "assembly": "mov     ecx, 1F6h"},
+          {"address": "0x1403CA230", "assembly": "mov     ecx, 190h"},
+          {"address": "0x1403CA235", "assembly": "lea     rdx, unk_14058BF7E"},
+          {"address": "0x1403CA243", "assembly": "mov     ecx, 1F6h"}
+        ]
+      }
+    ],
+    "limitations": [
+      "Body streaming is a static client-path conclusion, not an end-to-end SSE stability or inference test.",
+      "The 300-second timer covers DecodeResponse, including skipped keepalives; other transport or context limits are not characterized here.",
+      "The local binding identity does not reveal the remote gateway upstream-account selection.",
+      "Go ABI pseudocode is only a navigation aid; field layouts and control-flow claims were checked against type metadata and assembly."
     ]
   },
   "desktop": {
@@ -55,7 +374,7 @@
   "limitations": [
     "Function names were recovered from Go pclntab. Some decompiled C has Go ABI variable-allocation warnings; framing and signing claims were checked against assembly and data references.",
     "The archive and binary are not included. Addresses and offsets apply only to the identified samples.",
-    "No claim is made about remote gateway implementation, credential ownership, successful inference, or compatibility with newer official Desktop builds.",
+    "No claim is made about remote gateway implementation, ownership of real upstream credentials, successful inference, or compatibility with newer official Desktop builds. Local ReClaude-token equality is recorded separately.",
     "No credentials, account binding IDs, private inference URLs, user transcripts or raw logs are included."
   ]
 }

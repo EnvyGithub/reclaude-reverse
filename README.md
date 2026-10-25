@@ -6,10 +6,12 @@
 
 ## 分析记录
 
-- [2026-10-25：本机 ReClaude v1.5.1 转发机制与自建可行性](docs/research/2026-10-25-reclaude-v1.5.1-routing.md)
+- [2026-10-25：ReClaude v1.5.1 架构、隧道协议与登录机制完整报告](docs/research/2026-10-25-reclaude-v1.5.1-routing.md)
 - [版本、函数地址与关键代码证据索引](docs/research/reclaude-v1.5.1-evidence.json)
+- [登录流程与 Desktop OAuth 静态证据](docs/research/reclaude-v1.5.1-login-evidence.json)
+- [Chat / Code 凭证关系的脱敏离线核验](docs/research/reclaude-v1.5.1-offline-login-audit.json)
 
-本次记录基于安装包、当前二进制的离线分析和已有日志；未启动客户端、安装证书、修改运行配置或发送真实账户/推理请求。
+本次记录基于安装包、官方 IDA MCP 静态分析、已有日志和本机目标档案的离线凭证比较。已确认该档案的 Chat sessionKey、Desktop Code 缓存 access token 和 CLI access token 均等于同一个 ReClaude SK；公开结果不含凭证原文。未启动客户端、安装证书、修改其运行配置或发送新的登录、账户及推理请求。服务端如何使用真实上游账号、是否按账号部署容器仍未确认。
 
 ## 代码入口
 

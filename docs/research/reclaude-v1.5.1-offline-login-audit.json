@@ -1,0 +1,129 @@
+{
+  "inspected_date": "2026-10-25",
+  "scope": "Offline inspection of the existing current ReClaude account profile B1. No login, account, quota, OAuth or inference requests were sent.",
+  "privacy": "No credential values, secret fingerprints, private keys, email addresses, account UUIDs or binding IDs are included. Decrypted values were compared in process memory only.",
+  "profile": {
+    "alias": "B1",
+    "selected_by": "Existing .rec/claude/current pointer",
+    "profiles_found": 1
+  },
+  "code_credentials_file": {
+    "source": "B1/config/.credentials.json",
+    "access_token_equals_device_json_sk": true,
+    "refresh_token_is_known_reclaude_placeholder": true,
+    "refresh_token_device_suffix_matches_profile": true
+  },
+  "chat_cookie": {
+    "source": "B1/app/Network/Cookies",
+    "sqlite_open_mode": "ro, immutable",
+    "sqlite_cookie_schema_version": 24,
+    "wal_present": false,
+    "host": ".claude.ai",
+    "name": "sessionKey",
+    "secure": true,
+    "http_only": true,
+    "storage": "Chromium v10 AES-GCM; master key unwrapped with Windows CurrentUser DPAPI",
+    "aes_gcm_authentication_passed": true,
+    "chromium_host_digest_verified": true,
+    "value_equals_device_json_sk": true,
+    "has_reclaude_sk_prefix": true,
+    "has_claude_session_cookie_prefix": false,
+    "value_length": 50,
+    "created_at_singapore": "2026-10-23T11:53:19.6859820+08:00",
+    "last_updated_at_singapore": "2026-10-24T12:07:00.8735330+08:00"
+  },
+  "desktop_oauth_cache": {
+    "source": "B1/app/config.json",
+    "storage": "Electron safeStorage v10 AES-GCM",
+    "aes_gcm_authentication_passed": true,
+    "entries": [
+      {
+        "cache": "oauth:tokenCacheV2",
+        "entry": 1,
+        "scope_contains_claude_code": true,
+        "token_equals_device_json_sk": true,
+        "refresh_placeholder": "managed-by-reclaude",
+        "refresh_device_suffix_matches_profile": true
+      },
+      {
+        "cache": "oauth:tokenCacheV2",
+        "entry": 2,
+        "scope_contains_claude_code": false,
+        "token_equals_device_json_sk": true,
+        "refresh_placeholder": "managed-by-reclaude",
+        "refresh_device_suffix_matches_profile": true
+      },
+      {
+        "cache": "oauth:tokenCache",
+        "entry": 1,
+        "scope_contains_claude_code": false,
+        "token_equals_device_json_sk": true,
+        "refresh_placeholder": "managed-by-reclaude",
+        "refresh_device_suffix_matches_profile": true
+      },
+      {
+        "cache": "oauth:tokenCache",
+        "entry": 2,
+        "scope_contains_claude_code": false,
+        "token_equals_device_json_sk": true,
+        "refresh_placeholder": "managed-by-reclaude",
+        "refresh_device_suffix_matches_profile": true
+      }
+    ]
+  },
+  "existing_log_evidence": {
+    "timestamp_caveat": "Log lines do not encode a timezone; no causal timeline is inferred by comparing them with cookie timestamps.",
+    "events": [
+      {
+        "source": "B1/app/logs/main1.log",
+        "line": 125,
+        "event": "No persisted OAuth token cache found"
+      },
+      {
+        "source": "B1/app/logs/main1.log",
+        "line": 126,
+        "event": "OAuth lookup includes user:sessions:claude_code scope"
+      },
+      {
+        "source": "B1/app/logs/main1.log",
+        "line": 130,
+        "event": "Performing fresh /authorize"
+      },
+      {
+        "source": "B1/app/logs/main1.log",
+        "line": 146,
+        "event": "Server did not grant user:plugins scope on Code-tab token"
+      },
+      {
+        "source": "B1/app/logs/main1.log",
+        "line": 177,
+        "event": "Using cached token"
+      },
+      {
+        "source": "B1/app/logs/main.log",
+        "line": 57,
+        "event": "Using cached token"
+      }
+    ],
+    "set_cookie_capture_found": false,
+    "searched_sources": [
+      "B1/app/logs/main.log",
+      "B1/app/logs/main1.log",
+      "B1/app/logs/claude.ai-web.log",
+      ".rec/logs/daemon.log",
+      ".reclaude/logs/daemon.log"
+    ]
+  },
+  "conclusions": [
+    "The saved Chat sessionKey cookie is exactly the same credential as this profile's ReClaude SK.",
+    "The saved Desktop Code-scoped OAuth access token is also exactly the same ReClaude SK.",
+    "The saved CLI credentials, Chat cookie and Desktop OAuth cache therefore contain ReClaude proxy credentials, expressed in client-compatible fields and storage formats.",
+    "Proxy-side identity mapping and upstream-authentication adaptation are consistent with the observations; the private server implementation has not been inspected."
+  ],
+  "unconfirmed": [
+    "The exact HTTP response or local operation that first wrote the Chat sessionKey cookie.",
+    "Whether each gateway response is forwarded, rewritten or generated locally on the server.",
+    "The real upstream credential type, account allocation policy, or container/VM topology.",
+    "Present-day provider validity, successful inference, or live login health."
+  ]
+}

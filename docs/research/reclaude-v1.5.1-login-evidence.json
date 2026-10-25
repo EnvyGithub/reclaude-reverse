@@ -1,0 +1,231 @@
+{
+  "schema_version": 1,
+  "inspected_date": "2026-10-25",
+  "timezone": "Asia/Singapore",
+  "binary_sha256": "6DCC286D204FD93633C4E16CC1C8381759B26814BF95FAEAE2DA5EB216C9A385",
+  "asar_sha256": "492AA20983454EC250427B5C2F41E4B3881A00D7BA45629D4B0BE936C3F55C62",
+  "method": "Official IDA MCP static analysis and offline ASAR source reading. Actual saved credential relationships are recorded separately in reclaude-v1.5.1-offline-login-audit.json.",
+  "functions": [
+    {"name": "login.RunWithOptions", "address": "0x1403813C0", "evidence": "Device authorization start/poll and persistence"},
+    {"name": "login.persistApprovedDevice", "address": "0x140383560", "evidence": "Save device key, finalize Claude login and persist Device"},
+    {"name": "login.finalizeClaudeLogin", "address": "0x140382D20", "evidence": "Pass Device.SK to WriteCredentials for the selected binding"},
+    {"name": "login.FetchAccount", "address": "0x14037CC20", "evidence": "Signed GET /client/account; parse AccountInfo"},
+    {"name": "login.SyncClaudeAccountTo", "address": "0x14037E160", "evidence": "Merge returned account metadata into the local Claude configuration"},
+    {"name": "login.BindingAccountSyncTarget", "address": "0x14037DA00", "evidence": "Resolve the account config and app data directories"},
+    {"name": "claudehome.WriteCredentials", "address": "0x14035EE20", "evidence": "Generate CredentialsFile with SK access token and placeholder refresh token"},
+    {"name": "claudehome.MergeConfig", "address": "0x14035DEA0", "evidence": "Merge oauthAccount, userID and onboarding state"},
+    {"name": "claudehome.credentialsNeedHeal", "address": "0x14035FB00", "evidence": "Detect missing or wiped credentials file"},
+    {"name": "claudehome.credentialsBlobWiped", "address": "0x14035FD00", "evidence": "Detect empty, unparseable or empty-access-token JSON"},
+    {"name": "claudehome.HealIfWiped", "address": "0x14035F820", "evidence": "Rewrite synthetic credentials when the wipe predicate is met"},
+    {"name": "cli.maybeHealBindingCredentialsInDaemon", "address": "0x140407BC0", "evidence": "Daemon-side binding credential heal entry"},
+    {"name": "cli.syncBindingAppAccount", "address": "0x1403F0F60", "evidence": "Apply runtime gateway and synchronize binding account metadata"},
+    {"name": "cli.appLaunchTarget.syncAccountID", "address": "0x1403F1580", "evidence": "Synchronize app identity while resolving its account home"}
+  ],
+  "types": [
+    {
+      "name": "login.startResponse",
+      "address": "0x140541f20",
+      "size_bytes": 48,
+      "fields": [
+        {"name": "State", "offset": 0, "tag": "json:\"state\"", "type_address": "0x1404d7a60", "name_address": "0x1404af35e"},
+        {"name": "VerificationURI", "offset": 16, "tag": "json:\"verification_uri\"", "type_address": "0x1404d7a60", "name_address": "0x1404be16c"},
+        {"name": "PollIntervalSeconds", "offset": 32, "tag": "json:\"poll_interval_seconds\"", "type_address": "0x1404d7ca0", "name_address": "0x1404c274a"},
+        {"name": "ExpiresInSeconds", "offset": 40, "tag": "json:\"expires_in_seconds\"", "type_address": "0x1404d7ca0", "name_address": "0x1404bf8b3"}
+      ]
+    },
+    {
+      "name": "login.pollResponse",
+      "address": "0x1405620c0",
+      "size_bytes": 144,
+      "fields": [
+        {"name": "Status", "offset": 0, "tag": "json:\"status\"", "type_address": "0x1404d7a60", "name_address": "0x1404b1a0d"},
+        {"name": "SK", "offset": 16, "tag": "json:\"sk\"", "type_address": "0x1404d7a60", "name_address": "0x1404a633c"},
+        {"name": "DeviceID", "offset": 32, "tag": "json:\"device_id\"", "type_address": "0x1404d7c20", "name_address": "0x1404b667a"},
+        {"name": "GatewayURL", "offset": 40, "tag": "json:\"gateway_url\"", "type_address": "0x1404d7a60", "name_address": "0x1404b907c"},
+        {"name": "UserEmail", "offset": 56, "tag": "json:\"user_email\"", "type_address": "0x1404d7a60", "name_address": "0x1404b7b6f"},
+        {"name": "AccountUUID", "offset": 72, "tag": "json:\"account_uuid\"", "type_address": "0x1404d7a60", "name_address": "0x1404ba1f9"},
+        {"name": "OrganizationUUID", "offset": 88, "tag": "json:\"organization_uuid\"", "type_address": "0x1404d7a60", "name_address": "0x1404bf045"},
+        {"name": "Reused", "offset": 104, "tag": "json:\"reused\"", "type_address": "0x1404d7e60", "name_address": "0x1404b1a23"},
+        {"name": "DeviceName", "offset": 112, "tag": "json:\"device_name\"", "type_address": "0x1404d7a60", "name_address": "0x1404b90d9"},
+        {"name": "Platform", "offset": 128, "tag": "json:\"platform\"", "type_address": "0x1404d7a60", "name_address": "0x1404b5bc1"}
+      ]
+    },
+    {
+      "name": "login.AccountInfo",
+      "address": "0x14056a5a0",
+      "size_bytes": 200,
+      "fields": [
+        {"name": "UserEmail", "offset": 0, "tag": "json:\"user_email\"", "type_address": "0x1404d7a60", "name_address": "0x1404b7b6f"},
+        {"name": "EmailAddress", "offset": 16, "tag": "json:\"email_address\"", "type_address": "0x1404d7a60", "name_address": "0x1404bb311"},
+        {"name": "AccountUUID", "offset": 32, "tag": "json:\"account_uuid\"", "type_address": "0x1404d7a60", "name_address": "0x1404ba1f9"},
+        {"name": "OrganizationUUID", "offset": 48, "tag": "json:\"organization_uuid\"", "type_address": "0x1404d7a60", "name_address": "0x1404bf045"},
+        {"name": "AccountDeviceID", "offset": 64, "tag": "json:\"account_device_id\"", "type_address": "0x1404d7a60", "name_address": "0x1404be927"},
+        {"name": "HasExtraUsageEnabled", "offset": 80, "tag": "json:\"has_extra_usage_enabled\"", "type_address": "0x1404c6aa0", "name_address": "0x1404c3dd2"},
+        {"name": "BillingType", "offset": 88, "tag": "json:\"billing_type\"", "type_address": "0x1404d7a60", "name_address": "0x1404ba21a"},
+        {"name": "AccountCreatedAt", "offset": 104, "tag": "json:\"account_created_at\"", "type_address": "0x1404d7a60", "name_address": "0x1404bf887"},
+        {"name": "SubscriptionCreatedAt", "offset": 120, "tag": "json:\"subscription_created_at\"", "type_address": "0x1404d7a60", "name_address": "0x1404c440b"},
+        {"name": "DisplayName", "offset": 136, "tag": "json:\"display_name\"", "type_address": "0x1404d7a60", "name_address": "0x1404ba23b"},
+        {"name": "Timezone", "offset": 152, "tag": "json:\"timezone\"", "type_address": "0x1404d7a60", "name_address": "0x1404b5c29"},
+        {"name": "Platform", "offset": 168, "tag": "json:\"platform\"", "type_address": "0x1404d7a60", "name_address": "0x1404b5bc1"},
+        {"name": "Eligibility", "offset": 184, "tag": "json:\"eligibility\"", "type_address": "0x1404c5f20", "name_address": "0x1404b9905"},
+        {"name": "ClientRequirements", "offset": 192, "tag": "json:\"client_requirements\"", "type_address": "0x1404ed040", "name_address": "0x1404c0f3d"}
+      ]
+    },
+    {
+      "name": "login.InstallBlob",
+      "address": "0x1405326e0",
+      "size_bytes": 40,
+      "fields": [
+        {"name": "URL", "offset": 0, "tag": "json:\"url\"", "type_address": "0x1404d7a60", "name_address": "0x1404a9330"},
+        {"name": "SHA256", "offset": 16, "tag": "json:\"sha256\"", "type_address": "0x1404d7a60", "name_address": "0x1404b191b"},
+        {"name": "Size", "offset": 32, "tag": "json:\"size\"", "type_address": "0x1404d7c20", "name_address": "0x1404ac733"}
+      ]
+    },
+    {
+      "name": "claudehome.OAuthAccount",
+      "address": "0x14055d380",
+      "size_bytes": 104,
+      "fields": [
+        {"name": "AccountUUID", "offset": 0, "tag": "json:\"accountUuid\"", "type_address": "0x1404d7a60", "name_address": "0x1404b98c5"},
+        {"name": "EmailAddress", "offset": 16, "tag": "json:\"emailAddress\"", "type_address": "0x1404d7a60", "name_address": "0x1404baa85"},
+        {"name": "OrganizationUUID", "offset": 32, "tag": "json:\"organizationUuid\"", "type_address": "0x1404d7a60", "name_address": "0x1404be87f"},
+        {"name": "HasExtraUsageEnabled", "offset": 48, "tag": "json:\"hasExtraUsageEnabled,omitempty\"", "type_address": "0x1404c6aa0", "name_address": "0x1404d6e72"},
+        {"name": "BillingType", "offset": 56, "tag": "json:\"billingType,omitempty\"", "type_address": "0x1404d7a60", "name_address": "0x1404be8a9"},
+        {"name": "AccountCreatedAt", "offset": 72, "tag": "json:\"accountCreatedAt,omitempty\"", "type_address": "0x1404c66a0", "name_address": "0x1404c36e2"},
+        {"name": "SubscriptionCreatedAt", "offset": 80, "tag": "json:\"subscriptionCreatedAt,omitempty\"", "type_address": "0x1404c66a0", "name_address": "0x1404d736d"},
+        {"name": "DisplayName", "offset": 88, "tag": "json:\"displayName,omitempty\"", "type_address": "0x1404d7a60", "name_address": "0x1404be8d3"}
+      ]
+    },
+    {
+      "name": "login.Transport",
+      "address": "0x140521ac0",
+      "size_bytes": 32,
+      "fields": [
+        {"name": "Websocket", "offset": 0, "tag": "json:\"websocket\"", "type_address": "0x1404d7a60", "name_address": "0x1404b7115"},
+        {"name": "Note", "offset": 16, "tag": "json:\"note\"", "type_address": "0x1404d7a60", "name_address": "0x1404ac721"}
+      ]
+    },
+    {
+      "name": "login.Eligibility",
+      "address": "0x140521a20",
+      "size_bytes": 16,
+      "fields": [
+        {"name": "Eligible", "offset": 0, "tag": "json:\"eligible\"", "type_address": "0x1404d7e60", "name_address": "0x1404b5bf5"},
+        {"name": "Reason", "offset": 8, "tag": "json:\"reason\"", "type_address": "0x1404c66a0", "name_address": "0x1404b19e1"}
+      ]
+    },
+    {
+      "name": "login.ClientRequirements",
+      "address": "0x140541da0",
+      "size_bytes": 40,
+      "fields": [
+        {"name": "MinVersion", "offset": 0, "tag": "json:\"min_version\"", "type_address": "0x1404d7a60", "name_address": "0x1404b90ba"},
+        {"name": "Transport", "offset": 16, "tag": "json:\"transport\"", "type_address": "0x1404c5f60", "name_address": "0x1404b7131"},
+        {"name": "Install", "offset": 24, "tag": "json:\"install\"", "type_address": "0x1404c5fe0", "name_address": "0x1404b4010"},
+        {"name": "Features", "offset": 32, "tag": "json:\"features\"", "type_address": "0x1404c6020", "name_address": "0x1404b5c0f"}
+      ]
+    },
+    {
+      "name": "claudehome.CredentialsFile",
+      "address": "0x140508320",
+      "size_bytes": 80,
+      "fields": [
+        {"name": "ClaudeAiOauth", "offset": 0, "tag": "json:\"claudeAiOauth\"", "type_address": "0x14054b3c0", "name_address": "0x1404bba5b", "go_type": "claudehome.OAuthCredentials"}
+      ]
+    },
+    {
+      "name": "claudehome.OAuthCredentials",
+      "address": "0x14054b3c0",
+      "size_bytes": 80,
+      "fields": [
+        {"name": "AccessToken", "offset": 0, "tag": "json:\"accessToken\"", "type_address": "0x1404d7a60", "name_address": "0x1404b98a5", "go_type": "string"},
+        {"name": "RefreshToken", "offset": 16, "tag": "json:\"refreshToken\"", "type_address": "0x1404d7a60", "name_address": "0x1404baa63", "go_type": "string"},
+        {"name": "ExpiresAt", "offset": 32, "tag": "json:\"expiresAt\"", "type_address": "0x1404d7c20", "name_address": "0x1404b70a5", "go_type": "int64"},
+        {"name": "Scopes", "offset": 40, "tag": "json:\"scopes\"", "type_address": "0x1404d0be0", "name_address": "0x1404b199f", "go_type": "[]string"},
+        {"name": "SubscriptionType", "offset": 64, "tag": "json:\"subscriptionType\"", "type_address": "0x1404d7a60", "name_address": "0x1404be855", "go_type": "string"}
+      ]
+    },
+    {
+      "name": "login.startRequest",
+      "address": "0x14055f680",
+      "size_bytes": 136,
+      "fields": [
+        {"name": "Hostname", "offset": 0, "tag": "json:\"hostname\"", "type_address": "0x1404d7a60", "name_address": "0x1404b5bdb", "go_type": "string"},
+        {"name": "OS", "offset": 16, "tag": "json:\"os\"", "type_address": "0x1404d7a60", "name_address": "0x1404a634a", "go_type": "string"},
+        {"name": "Arch", "offset": 32, "tag": "json:\"arch\"", "type_address": "0x1404d7a60", "name_address": "0x1404ac6fd", "go_type": "string"},
+        {"name": "PublicKey", "offset": 48, "tag": "json:\"public_key,omitempty\"", "type_address": "0x1404d7a60", "name_address": "0x1404bd245", "go_type": "string"},
+        {"name": "MachineHash", "offset": 64, "tag": "json:\"machine_hash,omitempty\"", "type_address": "0x1404d7a60", "name_address": "0x1404befef", "go_type": "string"},
+        {"name": "MachineInfo", "offset": 80, "tag": "json:\"machine_info,omitempty\"", "type_address": "0x1404cb860", "name_address": "0x1404bf01a", "go_type": "*machineinfo.Info"},
+        {"name": "Platform", "offset": 88, "tag": "json:\"platform\"", "type_address": "0x1404d7a60", "name_address": "0x1404b5bc1", "go_type": "string"},
+        {"name": "Capabilities", "offset": 104, "tag": "json:\"capabilities,omitempty\"", "type_address": "0x1404d0be0", "name_address": "0x1404bf85b", "go_type": "[]string"},
+        {"name": "OrgID", "offset": 128, "tag": "json:\"org_id,omitempty\"", "type_address": "0x1404d7c20", "name_address": "0x1404b909b", "go_type": "int64"}
+      ]
+    }
+  ],
+  "instruction_checkpoints": [
+    {"address": "0x140381520", "assembly": "call    rec_internal_keypair_Generate"},
+    {"address": "0x140381993", "assembly": "lea     rdi, unk_1405899A9"},
+    {"address": "0x1403819E0", "assembly": "call    rec_internal_login_postJSON"},
+    {"address": "0x140381E7F", "assembly": "lea     rdi, unk_1405889FA"},
+    {"address": "0x140381ECB", "assembly": "call    rec_internal_login_postJSON"},
+    {"address": "0x140382341", "assembly": "mov     rsi, [rdx+10h]"},
+    {"address": "0x140382349", "assembly": "mov     [rsp+5E0h+var_328], rsi"},
+    {"address": "0x140382305", "assembly": "call    rec_internal_keypair___Keypair__PublicKeyFingerprint"},
+    {"address": "0x140382473", "assembly": "call    rec_internal_login_persistApprovedDevice"},
+    {"address": "0x140382EB6", "assembly": "mov     r8, [rsp+290h+arg_0]"},
+    {"address": "0x140382EBE", "assembly": "mov     r9, [rsp+290h+arg_8]"},
+    {"address": "0x140382EC6", "assembly": "call    rec_internal_claudehome_WriteCredentials"},
+    {"address": "0x14035EF2A", "assembly": "mov     edi, 0Ah"},
+    {"address": "0x14035EF34", "assembly": "call    go_time_Time_AddDate"},
+    {"address": "0x14035EF98", "assembly": "lea     rax, unk_14058AABA"},
+    {"address": "0x14035EFA4", "assembly": "call    rec_internal_claudehome_TagRefreshToken"},
+    {"address": "0x14035EFC6", "assembly": "mov     rdx, [rsp+118h+arg_28]"},
+    {"address": "0x14035EFCE", "assembly": "mov     [rsp+118h+var_A8], rdx"},
+    {"address": "0x14035EFE0", "assembly": "mov     [rsp+118h+var_98], rax"},
+    {"address": "0x14035EFF5", "assembly": "mov     [rsp+118h+var_88], rdx"},
+    {"address": "0x14035F0AD", "assembly": "lea     rdx, unk_1405806B0"},
+    {"address": "0x14035F0F4", "assembly": "call    go_encoding_json_MarshalIndent"},
+    {"address": "0x14035F1A5", "assembly": "lea     rdx, unk_140587B48"},
+    {"address": "0x14035F1E0", "assembly": "call    rec_internal_atomicwrite_WriteFile"},
+    {"address": "0x14037CD48", "assembly": "lea     rdi, unk_140586347"},
+    {"address": "0x14037CDC6", "assembly": "call    go_runtime_concatstring2"},
+    {"address": "0x14037CFD5", "assembly": "call    rec_internal_deviceauth_Signer_AddSignatureHeaders"},
+    {"address": "0x14037D185", "assembly": "lea     rax, unk_14056A5A0"},
+    {"address": "0x14037D2B9", "assembly": "call    go_encoding_json___Decoder__Decode"}
+  ],
+  "static_constants": [
+    {"address": "0x1405899A9", "size": 19, "value": "/api/cli/auth/start"},
+    {"address": "0x1405889FA", "size": 18, "value": "/api/cli/auth/poll"},
+    {"address": "0x140586347", "size": 15, "value": "/client/account"},
+    {"address": "0x140587B48", "size": 17, "value": ".credentials.json"},
+    {"address": "0x14058AABA", "size": 20, "value": "not-used-by-reclaude"},
+    {"address": "0x1405806B0", "size": 3, "value": "max"},
+    {"address": "0x1405841BB", "size": 12, "value": "oauthAccount"},
+    {"address": "0x14058C89F", "size": 22, "value": "hasCompletedOnboarding"},
+    {"address": "0x140581055", "size": 6, "value": "userID"}
+  ],
+  "generated_credentials": {"accessToken": "Device.SK, supplied by login poll and passed unchanged to WriteCredentials", "refreshToken": "TagRefreshToken(\"not-used-by-reclaude\", DeviceID)", "expiresAt": "UTC now plus 10 calendar years, in Unix milliseconds", "subscriptionType": "max", "local_onboarding": true, "real_entitlement_claim": false},
+  "resolved_callbacks": {"persistApprovedDevice.finalizeClaudeLogin": "0x140382D20", "finalizeClaudeLogin.SyncBindingAccount": "0x14037DE00"},
+  "desktop_observations": [
+    {"id": "cookie-reader", "source": ".vite/build/index.chunk-BRvO7fVg.js", "source_sha256": "5f1b8079ae7a9b6ac70cb201ae968a108f47f010852ed70d6d22c08d087e50b2", "symbol": "Rwn", "offset_unit": "Zero-based Unicode character offset in decoded UTF-8, not byte offset", "char_start": 2955705, "char_end_exclusive": 2956255, "finding": "Read sessionKey from Electron default session; strict path filters secure/httpOnly cookies."},
+    {"id": "oauth-mint", "source": ".vite/build/index.chunk-BRvO7fVg.js", "source_sha256": "5f1b8079ae7a9b6ac70cb201ae968a108f47f010852ed70d6d22c08d087e50b2", "symbol": "WEn", "offset_unit": "Zero-based Unicode character offset in decoded UTF-8, not byte offset", "char_start": 2980354, "char_end_exclusive": 2984654, "finding": "Use sessionKey as Bearer for org-specific authorize, then exchange authorization code at the token endpoint."},
+    {"id": "oauth-refresh", "source": ".vite/build/index.chunk-BRvO7fVg.js", "source_sha256": "5f1b8079ae7a9b6ac70cb201ae968a108f47f010852ed70d6d22c08d087e50b2", "symbol": "zEn", "offset_unit": "Zero-based Unicode character offset in decoded UTF-8, not byte offset", "char_start": 2979350, "char_end_exclusive": 2980000, "finding": "Use refresh_token grant and consume token, refresh token, expiry and optional scope."},
+    {"id": "token-cache-persist", "source": ".vite/build/index.chunk-BRvO7fVg.js", "source_sha256": "5f1b8079ae7a9b6ac70cb201ae968a108f47f010852ed70d6d22c08d087e50b2", "symbol": "rk / mDn", "offset_unit": "Zero-based Unicode character offset in decoded UTF-8, not byte offset", "char_start": 2987723, "char_end_exclusive": 2989023, "finding": "Encrypt and reload scoped OAuth cache with Electron safeStorage."},
+    {"id": "code-scope", "source": ".vite/build/index.chunk-BRvO7fVg.js", "source_sha256": "5f1b8079ae7a9b6ac70cb201ae968a108f47f010852ed70d6d22c08d087e50b2", "symbol": "DO", "offset_unit": "Zero-based Unicode character offset in decoded UTF-8, not byte offset", "char_start": 2965759, "char_end_exclusive": 2965959, "finding": "Add user:sessions:claude_code to the Code-tab scope."},
+    {"id": "code-env", "source": ".vite/build/index.chunk-BRvO7fVg.js", "source_sha256": "5f1b8079ae7a9b6ac70cb201ae968a108f47f010852ed70d6d22c08d087e50b2", "symbol": "qq", "offset_unit": "Zero-based Unicode character offset in decoded UTF-8, not byte offset", "char_start": 4435032, "char_end_exclusive": 4435982, "finding": "Set CLAUDE_CODE_OAUTH_TOKEN from the supplied OAuth token; clear competing API/auth-token variables."},
+    {"id": "code-env-build", "source": ".vite/build/index.chunk-BRvO7fVg.js", "source_sha256": "5f1b8079ae7a9b6ac70cb201ae968a108f47f010852ed70d6d22c08d087e50b2", "symbol": "vni", "offset_unit": "Zero-based Unicode character offset in decoded UTF-8, not byte offset", "char_start": 4432306, "char_end_exclusive": 4433306, "finding": "Build the Code child environment and apply qq output."},
+    {"id": "code-credential-entry", "source": ".vite/build/index.chunk-BRvO7fVg.js", "source_sha256": "5f1b8079ae7a9b6ac70cb201ae968a108f47f010852ed70d6d22c08d087e50b2", "symbol": "sAa", "offset_unit": "Zero-based Unicode character offset in decoded UTF-8, not byte offset", "char_start": 6170459, "char_end_exclusive": 6170669, "finding": "1P Code credential entry uses the Code-scope OAuth flow; provider-managed mode takes a separate branch."},
+    {"id": "bootstrap-account", "source": ".vite/build/index.chunk-BRvO7fVg.js", "source_sha256": "5f1b8079ae7a9b6ac70cb201ae968a108f47f010852ed70d6d22c08d087e50b2", "symbol": "xOn", "offset_unit": "Zero-based Unicode character offset in decoded UTF-8, not byte offset", "char_start": 3010299, "char_end_exclusive": 3011899, "finding": "Fetch /api/bootstrap and backfill account identity when existing state and logout checks permit it."},
+    {"id": "frontend-origin", "source": ".vite/build/index.chunk-BRvO7fVg.js", "source_sha256": "5f1b8079ae7a9b6ac70cb201ae968a108f47f010852ed70d6d22c08d087e50b2", "symbol": "Qg", "offset_unit": "Zero-based Unicode character offset in decoded UTF-8, not byte offset", "char_start": 1716709, "char_end_exclusive": 1717089, "finding": "Default hosted frontend is https://claude.ai; an enabled developer override can select CLAUDE_AI_URL."},
+    {"id": "code-base-query", "source": ".vite/build/index.chunk-C7nJwi7_.js", "source_sha256": "c102e6dfbea875275664fe3a8e11081e8e70a3ca681588c422fe34e56b241baf", "symbol": "_fetchBaseQueryConfig", "offset_unit": "Zero-based Unicode character offset in decoded UTF-8, not byte offset", "char_start": 2050164, "char_end_exclusive": 2051464, "finding": "Obtain a Code token with margin and pass it to the child-environment builder."},
+    {"id": "code-refresh", "source": ".vite/build/index.chunk-C7nJwi7_.js", "source_sha256": "c102e6dfbea875275664fe3a8e11081e8e70a3ca681588c422fe34e56b241baf", "symbol": "refreshOAuthTokenForSdk", "offset_unit": "Zero-based Unicode character offset in decoded UTF-8, not byte offset", "char_start": 705431, "char_end_exclusive": 706931, "finding": "Handle CLI refresh requests after 401, with account/organization identity checks."},
+    {"id": "code-token-push", "source": ".vite/build/index.chunk-C7nJwi7_.js", "source_sha256": "c102e6dfbea875275664fe3a8e11081e8e70a3ca681588c422fe34e56b241baf", "symbol": "pushCcdTokenToSession", "offset_unit": "Zero-based Unicode character offset in decoded UTF-8, not byte offset", "char_start": 708752, "char_end_exclusive": 709402, "finding": "Push a rotated token through update_environment_variables when supported and identity checks pass."}
+  ],
+  "limitations": [
+    "The Go response structures establish fields consumed by the client, not a captured raw login response.",
+    "The generated CLI credentials and the Desktop scoped OAuth cache are separate paths; the offline audit verified SK equality in both.",
+    "The first writer of the Chat sessionKey and the exact gateway OAuth responses were not captured.",
+    "The installed ASAR was not fully diffed against a pristine upstream Desktop package.",
+    "Neither container topology nor ownership and selection of real upstream credentials is established."
+  ]
+}
